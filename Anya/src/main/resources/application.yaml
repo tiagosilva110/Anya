@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: Anya
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/anya}
+    username: ${DATASOURCE_USERNAME:postgres}
+    password: ${DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
