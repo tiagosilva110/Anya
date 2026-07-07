@@ -26,7 +26,7 @@ public class Message {
 //            cascade = CascadeType.ALL, // faz um cascade para todas as operações no banco (Usar como estudo, não recomendado em produção)
             fetch = FetchType.LAZY
     )
-    @JoinColumn(name = "id_account")
+    @JoinColumn(name = "account")
     private Account account;
 
 }

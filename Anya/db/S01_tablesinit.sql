@@ -23,3 +23,12 @@ CREATE TABLE IF NOT EXISTS account(
 
 ALTER TABLE public.temp_messages 
 ALTER COLUMN moment SET DEFAULT now();
+
+ALTER TABLE public.temp_messages 
+ADD COLUMN receiver varchar(120);
+
+ALTER TABLE public.temp_messages 
+DROP COLUMN sender;
+
+ALTER TABLE public.temp_messages 
+ADD COLUMN sender varchar(120);
