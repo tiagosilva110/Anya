@@ -3,98 +3,113 @@
 import argparse
 import queue
 import sys
+import os
+import time
+import json
+import requests
 import sounddevice as sd
-import keyboard  # Nova biblioteca para detectar os botões
-
 from vosk import Model, KaldiRecognizer
 
+# Dependências do servidor web
+from fastapi import FastAPI, BackgroundTasks
+import uvicorn
+
+app = FastAPI(title="Serviço de Reconhecimento de Voz")
 q = queue.Queue()
 
+# --- Configurações do Vosk (Mantidas do seu script original) ---
 def int_or_str(text):
-    """Função auxiliar para a análise de argumentos."""
     try:
         return int(text)
     except ValueError:
         return text
 
-def callback(indata, frames, time, status):
-    """Esta função é chamada para cada bloco de áudio."""
+def callback(indata, frames, time_info, status):
     if status:
         print(status, file=sys.stderr)
     q.put(bytes(indata))
 
-parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument(
-    "-l", "--list-devices", action="store_true",
-    help="mostra a lista de dispositivos de áudio e sai")
-args, remaining = parser.parse_known_args()
-if args.list_devices:
-    print(sd.query_devices())
-    parser.exit(0)
+# Configuração de parâmetros padrão
+DEVICE = None        # ID do microfone (None usa o padrão)
+SAMPLERATE = 16000   # Frequência padrão (comum para Vosk)
+MODEL_PATH = "vosk-model-pt-fb-v0.1.1-pruned" # Seu modelo pesado
 
-parser = argparse.ArgumentParser(
-    description="Script de reconhecimento de fala controlado por botões.",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    parents=[parser])
-parser.add_argument(
-    "-d", "--device", type=int_or_str,
-    help="dispositivo de entrada (ID numérico ou parte do nome)")
-parser.add_argument(
-    "-r", "--samplerate", type=int, help="taxa de amostragem (sample rate)")
-parser.add_argument(
-    "-m", "--model", type=str, help="modelo de idioma; o padrão é pt")
-args = parser.parse_args(remaining)
+# Validação do modelo
+if not os.path.exists(MODEL_PATH):
+    # Se o modelo pesado não existir, tenta usar o pequeno da internet como fallback
+    print(f"[⚠️] Modelo local '{MODEL_PATH}' não encontrado. Usando modelo leve padrão...")
+    model = Model(model_name="vosk-model-small-pt-0.3")
+else:
+    print(f"[⚙️] Carregando modelo local: {MODEL_PATH}")
+    model = Model(MODEL_PATH)
 
-try:
-    if args.samplerate is None:
-        device_info = sd.query_devices(args.device, "input")
-        args.samplerate = int(device_info["default_samplerate"])
+rec = KaldiRecognizer(model, SAMPLERATE)
+
+
+# --- Função Principal de Gravação (Ativada por 10 segundos) ---
+def gravar_e_enviar():
+    print("\n[🔴 GRAVANDO] Microfone ativado por 10 segundos... Fale agora.")
+    
+    # Limpa a fila e o reconhecedor de lixos anteriores
+    while not q.empty():
+        q.get()
+    rec.Reset()
+
+    # Define o tempo de término (Agora + 10 segundos)
+    tempo_limite = time.time() + 10.0
+
+    # Abre o fluxo do microfone
+    with sd.RawInputStream(samplerate=SAMPLERATE, blocksize=16000, device=DEVICE,
+                            dtype="int16", channels=1, callback=callback):
         
-    if args.model is None:
-        model = Model(lang="pt")
-    else:
-        model = Model(lang=args.model)
+        while time.time() < tempo_limite:
+            try:
+                # Pega o áudio da fila com timeout pequeno para não travar o loop
+                data = q.get(timeout=0.1)
+                rec.AcceptWaveform(data)
+            except queue.Empty:
+                continue
 
-    rec = KaldiRecognizer(model, args.samplerate)
+    print("[⏳ PROCESSANDO] Tempo esgotado. Interpretando áudio...")
+    
+    # Pega o resultado final estruturado pelo Vosk (retorna uma string JSON)
+    resultado_raw = rec.Result()
+    resultado_json = json.loads(resultado_raw)
+    
+    # Extrai apenas o texto transcrito
+    texto_final = resultado_json.get("text", "")
+    print(f"Texto reconhecido: \"{texto_final}\"")
 
-    print("#" * 50)
-    print(" Pressione ESPAÇO para COMEÇAR a ouvir.")
-    print(" Pressione Ctrl+C a qualquer momento para sair.")
-    print("#" * 50)
+    # Envia o resultado para o destino final
+    url_destino = "http://localhost:8080/message"
+    payload = {"message": texto_final}
+    
+    try:
+        print(f"[📤 ENVIANDO] Postando mensagem para {url_destino}...")
+        response = requests.post(url_destino, json=payload, timeout=5)
+        print(f"[✅ ENVIADO] Resposta do servidor: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"[❌ ERRO] Falha ao enviar POST para o localhost:8080: {e}")
 
-    while True:
-        # 1. Espera o usuário apertar ESPAÇO para começar
-        keyboard.wait('space')
-        print("\n[🔴 GRAVANDO] Ouvindo... Fale agora.")
-        print("[⌨️] Pressione ENTER para PARAR e interpretar.")
-        
-        # Limpa qualquer resíduo anterior do áudio e do reconhecedor
-        while not q.empty():
-            q.get()
-        rec.Reset()
 
-        # 2. Inicia o fluxo do microfone
-        with sd.RawInputStream(samplerate=args.samplerate, blocksize=8000, device=args.device,
-                                dtype="int16", channels=1, callback=callback):
-            
-            # Loop de gravação ativa até que ENTER seja pressionado
-            while True:
-                data = q.get()
-                rec.AcceptWaveform(data)  # Alimenta o modelo em segundo plano
-                
-                if keyboard.is_pressed('enter'):
-                    print("\n[⏳ PROCESSANDO] Interpretando o áudio...")
-                    break
-        
-        # 3. Exibe o resultado final após parar o microfone
-        print("\nResultado Final:")
-        print("-" * 40)
-        print(rec.Result())
-        print("-" * 40)
-        print("\nPronto para a próxima! Pressione ESPAÇO para começar de novo.\n")
+# --- Rotas da API (Serviço) ---
 
-except KeyboardInterrupt:
-    print("\nEncerrado pelo usuário.")
-    parser.exit(0)
-except Exception as e:
-    parser.exit(type(e).__name__ + ": " + str(e))
+@app.post("/start")
+def iniciar_gravacao(background_tasks: BackgroundTasks):
+    """
+    Rota que recebe o POST para iniciar a gravação.
+    Usa 'BackgroundTasks' para que o servidor responda imediatamente ao cliente (200 OK)
+    enquanto executa o processo de gravação e envio em segundo plano.
+    """
+    background_tasks.add_task(gravar_e_enviar)
+    return {"status": "gravacao_iniciada", "duracao": "10s"}
+
+
+if __name__ == "__main__":
+    # Inicia o servidor na porta 5000 do localhost
+    print("\n" + "="*50)
+    print(" SERVIÇO DE VOZ ATIVO")
+    print(" Envie um POST para: http://localhost:5000/start")
+    print("="*50 + "\n")
+    
+    uvicorn.run(app, host="127.0.0.1", port=5000)
