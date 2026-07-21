@@ -34,14 +34,8 @@ DEVICE = None        # ID do microfone (None usa o padrão)
 SAMPLERATE = 16000   # Frequência padrão (comum para Vosk)
 MODEL_PATH = "vosk-model-pt-fb-v0.1.1-pruned" # Seu modelo pesado
 
-# Validação do modelo
-if not os.path.exists(MODEL_PATH):
-    # Se o modelo pesado não existir, tenta usar o pequeno da internet como fallback
-    print(f"[⚠️] Modelo local '{MODEL_PATH}' não encontrado. Usando modelo leve padrão...")
-    model = Model(model_name="vosk-model-small-pt-0.3")
-else:
-    print(f"[⚙️] Carregando modelo local: {MODEL_PATH}")
-    model = Model(MODEL_PATH)
+model = Model(MODEL_PATH)
+
 
 rec = KaldiRecognizer(model, SAMPLERATE)
 
@@ -82,7 +76,7 @@ def gravar_e_enviar():
 
     # Envia o resultado para o destino final
     url_destino = "http://localhost:8080/message"
-    payload = {"message": texto_final}
+    payload = {"body": texto_final}
     
     try:
         print(f"[📤 ENVIANDO] Postando mensagem para {url_destino}...")

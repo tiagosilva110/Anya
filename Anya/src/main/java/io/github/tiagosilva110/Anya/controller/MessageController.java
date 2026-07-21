@@ -9,19 +9,34 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
-@Controller
+@RestController
 @RequestMapping("message")
 @RequiredArgsConstructor
 public class MessageController {
 
     private final MessageService service;
     private final MessageMapper mapper;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @PostMapping("/start-recording")
+    public ResponseEntity<Void> startRecording() {
+        String pythonUrl = "http://localhost:5000/start";
+
+        try {
+            restTemplate.postForEntity(pythonUrl, null, String.class);
+
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     @PostMapping
     public ResponseEntity<Void> save(@RequestBody MessageCreateDTO dto){
