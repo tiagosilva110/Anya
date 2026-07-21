@@ -2,6 +2,7 @@ package io.github.tiagosilva110.Anya.controller;
 
 
 import io.github.tiagosilva110.Anya.controller.dto.MessageCreateDTO;
+import io.github.tiagosilva110.Anya.controller.dto.RecordingRequestDTO;
 import io.github.tiagosilva110.Anya.controller.mapper.MessageMapper;
 import io.github.tiagosilva110.Anya.model.Message;
 import io.github.tiagosilva110.Anya.service.MessageService;
@@ -25,15 +26,18 @@ public class MessageController {
     private final MessageMapper mapper;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @PostMapping("/start-recording")
-    public ResponseEntity<Void> startRecording() {
+
+    @PostMapping("/record")
+    public ResponseEntity<Void> startRecording(@RequestBody RecordingRequestDTO dto) {
         String pythonUrl = "http://localhost:5000/start";
 
         try {
-            restTemplate.postForEntity(pythonUrl, null, String.class);
+            // Repassa o DTO diretamente para a API Python (o Spring converte em JSON automaticamente)
+            restTemplate.postForEntity(pythonUrl, dto, String.class);
 
             return ResponseEntity.accepted().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
