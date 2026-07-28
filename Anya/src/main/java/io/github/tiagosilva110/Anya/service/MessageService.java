@@ -18,6 +18,13 @@ public class MessageService {
         return repository.save(message);
     }
 
+    public void update(Message message){
+        if(message.getId() == null){
+            throw new IllegalArgumentException("For update a message, it is necessary for it to be persisted");
+        }
+        repository.save(message);
+    }
+
     public void delete(Message message){
         repository.delete(message);
     }
