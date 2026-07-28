@@ -5,8 +5,7 @@ import java.util.UUID;
 
 public record MessageCreateDTO(
                        String sender,
-                       String body,
-                       String account
+                       String body
 ) {
 
 

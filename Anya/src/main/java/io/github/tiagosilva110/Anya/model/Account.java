@@ -16,10 +16,13 @@ public class Account {
     private UUID id;
 
     @Column
-    private String person;
+    private String name;
 
     @Column
-    private String email;
+    private String phone;
+
+    @Column
+    private String mail;
 
     @Column(name = "password_hash")
     private String passwordHash;

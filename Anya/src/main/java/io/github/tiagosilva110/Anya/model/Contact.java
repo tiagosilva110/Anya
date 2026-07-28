@@ -4,15 +4,13 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "message")
+@Table(name = "contact")
 @Entity
 @Getter
 @Setter
-public class Message {
+public class Contact {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,27 +20,16 @@ public class Message {
 //            cascade = CascadeType.ALL, // faz um cascade para todas as operações no banco (Usar como estudo, não recomendado em produção)
             fetch = FetchType.LAZY
     )
-    @JoinColumn(name = "contact")
-    private Contact contact;
-
-    @ManyToOne(
-//            cascade = CascadeType.ALL, // faz um cascade para todas as operações no banco (Usar como estudo, não recomendado em produção)
-            fetch = FetchType.LAZY
-    )
     @JoinColumn(name = "account")
     private Account account;
 
     @Column
-    private String body;
+    private String name;
 
     @Column
-    private byte[] voice;
+    private String phone;
 
     @Column
-    private String transcription;
-
-    @Column
-    private LocalDateTime created;
-
+    private String mail;
 
 }

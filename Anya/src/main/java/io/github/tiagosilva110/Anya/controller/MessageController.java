@@ -2,18 +2,14 @@ package io.github.tiagosilva110.Anya.controller;
 
 
 import io.github.tiagosilva110.Anya.controller.dto.MessageCreateDTO;
-import io.github.tiagosilva110.Anya.controller.dto.RecordingRequestDTO;
 import io.github.tiagosilva110.Anya.controller.mapper.MessageMapper;
 import io.github.tiagosilva110.Anya.model.Message;
 import io.github.tiagosilva110.Anya.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,34 +23,35 @@ public class MessageController {
     private final RestTemplate restTemplate = new RestTemplate();
 
 
-    @PostMapping("/record")
-    public ResponseEntity<Void> startRecording(@RequestBody RecordingRequestDTO dto) {
+    @PostMapping
+    public ResponseEntity<MessageReturnDTO> startRecording(@RequestBody MessageCreateDTO dto) {
+        Message message = mapper.toEntity(dto);
+        service.persist(message);
         String pythonUrl = "http://localhost:5000/start";
 
-        try {
-            // Repassa o DTO diretamente para a API Python (o Spring converte em JSON automaticamente)
-            restTemplate.postForEntity(pythonUrl, dto, String.class);
 
-            return ResponseEntity.accepted().build();
+        try {
+            ResponseEntity<MessageReturnDTO> response = restTemplate.postForEntity(pythonUrl, dto, MessageReturnDTO.class);
+            return ResponseEntity.accepted().body(response.getBody());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    @PostMapping
-    public ResponseEntity<Void> save(@RequestBody MessageCreateDTO dto){
-        Message message = mapper.toEntity(dto);
-        service.persist(message);
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(message.getId())
-                .toUri();
-
-        return ResponseEntity.created(location).build();
-
-    }
+//    @PostMapping
+//        public ResponseEntity<Void> save(@RequestBody MessageCreateDTO dto){
+//            Message message = mapper.toEntity(dto);
+//            service.persist(message);
+//            URI location = ServletUriComponentsBuilder
+//                    .fromCurrentRequest()
+//                    .path("/{id}")
+//                    .buildAndExpand(message.getId())
+//                    .toUri();
+//
+//            return ResponseEntity.created(location).build();
+//
+//    }
 
     @DeleteMapping
     public ResponseEntity<Void> delete(@RequestParam String idString){

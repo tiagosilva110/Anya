@@ -14,7 +14,7 @@ public interface MessageMapper {
     //@Mapping(source = "dataNascimento", target = "nascimento")
     //@Mapping(source = "nacionalidade", target = "origem")
     Message toEntity(MessageCreateDTO dto);
-
+/*
     default Account map(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -31,4 +31,6 @@ public interface MessageMapper {
 
         return account;
     }
+
+ */
 }

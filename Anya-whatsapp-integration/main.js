@@ -14,8 +14,10 @@ client.on('qr', (qr) => {
 client.initialize();
 
 client.on('message_create', async (message) => {
-    // IMPORTANTE: Evite responder mensagens que o próprio bot enviou para não entrar em loop
-    if (message.fromMe) return;
+
+    if (message.fromMe) {
+        return;
+    }
 
     const messageData = {
         sender: message.from,
@@ -31,11 +33,11 @@ client.on('message_create', async (message) => {
 
         if (response.ok) {
             // O Spring Boot deve retornar o texto da resposta no corpo (body)
-            const response = await response.text(); 
+            const responseData = await response.json();
             
-            if (response && response.trim() !== "") {
+            if (responseData && responseData.body && responseData.body.trim() !== "") {
                 // Envia a resposta da IA de volta para o número que enviou a mensagem
-                await client.sendMessage(message.from, response);
+                await client.sendMessage(message.from, responseData.body);
                 console.log('Resposta da enviada com sucesso');
             }
         } else {

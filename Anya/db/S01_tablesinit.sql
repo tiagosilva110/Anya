@@ -1,34 +1,25 @@
-CREATE TABLE IF NOT EXISTS temp_messages(
+create table message (
 	id UUID primary key,
-	sender varchar(60),
-	body Text,
-	moment timestamp,
-	account UUID
+	contact UUID not null,
+	account UUID not null,
+	body TEXT,
+	voice BYTEA,
+	transcription TEXT,
+	created timestamp default now()
 );
 
-CREATE TABLE IF NOT EXISTS pers_messages(
-	id UUID primary key,
-	sender varchar(60),
-	body Text,
-	moment timestamp,
-	account UUID
-);
-
-CREATE TABLE IF NOT EXISTS account(
-	id UUID primary key,
-	person varchar(60),
-	email varchar(120),
+create table account(
+	id uuid primary key,
+	name varchar(60),
+	phone varchar(20),
+	mail varchar(120),
 	password_hash varchar(120)
 );
 
-ALTER TABLE public.temp_messages 
-ALTER COLUMN moment SET DEFAULT now();
-
-ALTER TABLE public.temp_messages 
-ADD COLUMN receiver varchar(120);
-
-ALTER TABLE public.temp_messages 
-DROP COLUMN sender;
-
-ALTER TABLE public.temp_messages 
-ADD COLUMN sender varchar(120);
+create table contact(
+	id uuid primary key,
+	account uuid not null,
+	name varchar(60),
+	phone varchar(20),
+	mail varchar(120)
+);

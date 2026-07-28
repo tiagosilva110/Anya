@@ -30,8 +30,7 @@ fila_notificacoes = queue.Queue()
 
 class MensagemPayload(BaseModel):
     sender: str
-    titulo: str = "Aviso Prioritário"
-    mensagem: str
+    body: str
 
 # --- SONS DO SISTEMA WINDOWS (Agradáveis e Suaves) ---
 
@@ -91,7 +90,7 @@ def aplicar_dpi_awareness():
         except Exception:
             pass
 
-def exibir_notificacao(sender: str, titulo: str, mensagem: str):
+def exibir_notificacao(sender: str, body: str):
     """Exibe notificação com Fade In, texto com sombra e Fade Out (Sem título)."""
     print(f"[🔔 NOTIFICAÇÃO] Exibindo mensagem de: {sender}")
     
@@ -124,7 +123,7 @@ def exibir_notificacao(sender: str, titulo: str, mensagem: str):
         )
         canvas.pack(fill="both", expand=True)
 
-        texto_completo = f"De: {sender}\n{mensagem}"
+        texto_completo = f"De: {sender}\n{body}"
 
         # Sombra (Preto)
         canvas.create_text(
@@ -218,11 +217,11 @@ def gravar_e_enviar():
 
 def processar_fluxo(payload: MensagemPayload):
     # 1. Dispara voz TTS
-    texto_para_falar = f"Mensagem de {payload.sender}. {payload.mensagem}"
+    texto_para_falar = f"Mensagem de {payload.sender}. {payload.body}"
     falar_texto_async(texto_para_falar)
 
     # 2. Exibe notificação na tela
-    exibir_notificacao(payload.sender, payload.titulo, payload.mensagem)
+    exibir_notificacao(payload.sender, payload.body)
     
     # 3. Executa gravação do microfone (com som suave ao iniciar/terminar)
     gravar_e_enviar()
@@ -255,10 +254,8 @@ def iniciar_gravacao(payload: MensagemPayload):
     print(f"[📥 RECEBIDO] Nova mensagem adicionada à fila. Posição atual: {posicao}")
     
     return {
-        "status": "enfileirado",
-        "posicao_fila": posicao,
         "sender": payload.sender,
-        "mensagem": payload.mensagem
+        "body": payload.body
     }
 
 if __name__ == "__main__":
