@@ -1,10 +1,14 @@
 package io.github.tiagosilva110.Anya.controller.dto;
 
+import io.github.tiagosilva110.Anya.model.Account;
+import io.github.tiagosilva110.Anya.model.Contact;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
 public record MessageCreateDTO(
-                       String sender,
+                       String contact,
+                       String account,
                        String body
 ) {
 

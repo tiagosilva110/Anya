@@ -20,12 +20,14 @@ client.on('message_create', async (message) => {
     }
 
     const messageData = {
-        sender: message.from,
-        body: message.body
+        contact: message.from,
+        account: client.info.wid.user,
+        body: message.body,
+
     };
 
     try {
-        const response = await fetch('http://localhost:8080/message', {
+        const response = await fetch('http://localhost:8000/message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(messageData)

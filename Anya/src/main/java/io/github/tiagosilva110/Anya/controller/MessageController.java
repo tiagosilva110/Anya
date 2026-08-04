@@ -2,14 +2,19 @@ package io.github.tiagosilva110.Anya.controller;
 
 
 import io.github.tiagosilva110.Anya.controller.dto.MessageCreateDTO;
-import io.github.tiagosilva110.Anya.controller.mapper.MessageMapper;
+import io.github.tiagosilva110.Anya.model.Account;
+import io.github.tiagosilva110.Anya.model.Contact;
 import io.github.tiagosilva110.Anya.model.Message;
+import io.github.tiagosilva110.Anya.service.AccountService;
+import io.github.tiagosilva110.Anya.service.ContactService;
 import io.github.tiagosilva110.Anya.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,39 +24,33 @@ import java.util.UUID;
 public class MessageController {
 
     private final MessageService service;
-    private final MessageMapper mapper;
+    private final AccountService accountService;
+    private final ContactService contactService;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
 
     @PostMapping
-    public ResponseEntity<MessageReturnDTO> startRecording(@RequestBody MessageCreateDTO dto) {
-        Message message = mapper.toEntity(dto);
-        service.persist(message);
-        String pythonUrl = "http://localhost:5000/start";
-
-
-        try {
-            ResponseEntity<MessageReturnDTO> response = restTemplate.postForEntity(pythonUrl, dto, MessageReturnDTO.class);
-            return ResponseEntity.accepted().body(response.getBody());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+    public ResponseEntity<MessageCreateDTO> Create(@RequestBody MessageCreateDTO dto) {
+        Message message = new Message();
+        Optional<Account> account = accountService.findById(UUID.fromString(dto.account()));
+        if (account.isPresent()) {
+            message.setAccount(account.get());
         }
-    }
+        Optional<Contact> contact = contactService.findById(UUID.fromString(dto.contact()));
+        if (contact.isPresent()) {
+            message.setContact(contact.get());
+        }
+        message.setBody(dto.body());
+        service.persist(message);
+                    URI location = ServletUriComponentsBuilder
+                    .fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(message.getId())
+                    .toUri();
 
-//    @PostMapping
-//        public ResponseEntity<Void> save(@RequestBody MessageCreateDTO dto){
-//            Message message = mapper.toEntity(dto);
-//            service.persist(message);
-//            URI location = ServletUriComponentsBuilder
-//                    .fromCurrentRequest()
-//                    .path("/{id}")
-//                    .buildAndExpand(message.getId())
-//                    .toUri();
-//
-//            return ResponseEntity.created(location).build();
-//
-//    }
+            return ResponseEntity.created(location).build();
+    }
 
     @DeleteMapping
     public ResponseEntity<Void> delete(@RequestParam String idString){
