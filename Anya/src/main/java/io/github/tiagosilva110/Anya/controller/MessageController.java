@@ -31,25 +31,30 @@ public class MessageController {
 
 
     @PostMapping
-    public ResponseEntity<MessageCreateDTO> Create(@RequestBody MessageCreateDTO dto) {
+    public ResponseEntity<Object> create(@RequestBody MessageCreateDTO dto) {
         Message message = new Message();
         Optional<Account> account = accountService.findById(UUID.fromString(dto.account()));
         if (account.isPresent()) {
             message.setAccount(account.get());
-        }
-        Optional<Contact> contact = contactService.findById(UUID.fromString(dto.contact()));
-        if (contact.isPresent()) {
-            message.setContact(contact.get());
-        }
-        message.setBody(dto.body());
-        service.persist(message);
-                    URI location = ServletUriComponentsBuilder
-                    .fromCurrentRequest()
-                    .path("/{id}")
-                    .buildAndExpand(message.getId())
-                    .toUri();
+
+            String phone = dto.phone();
+            Optional<Contact> contact = contactService.findByPhoneAndAccount(phone, account.get());
+
+            if (contact.isPresent()) {
+                message.setContact(contact.get());
+            }
+            message.setBody(dto.body());
+            service.persist(message);
+            URI location = ServletUriComponentsBuilder
+                        .fromCurrentRequest()
+                        .path("/{id}")
+                        .buildAndExpand(message.getId())
+                        .toUri();
 
             return ResponseEntity.created(location).build();
+        } else {
+            return ResponseEntity.unprocessableContent().build();
+        }
     }
 
     @DeleteMapping

@@ -1,6 +1,7 @@
 package io.github.tiagosilva110.Anya.model;
 
 import jakarta.persistence.*;
+import lombok.Generated;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -41,7 +42,7 @@ public class Message {
     @Column
     private String transcription;
 
-    @Column
+    @Column(name = "created", insertable = false, updatable = false)
     private LocalDateTime created;
 
 

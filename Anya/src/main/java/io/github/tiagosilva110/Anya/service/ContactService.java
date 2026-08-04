@@ -1,5 +1,6 @@
 package io.github.tiagosilva110.Anya.service;
 
+import io.github.tiagosilva110.Anya.model.Account;
 import io.github.tiagosilva110.Anya.model.Contact;
 import io.github.tiagosilva110.Anya.repository.ContactRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +32,9 @@ public class ContactService {
 
     public Optional<Contact> findById(UUID id){
         return repository.findById(id);
+    }
+
+    public Optional<Contact> findByPhoneAndAccount(String phone, Account account){
+        return repository.findByPhoneAndAccount(phone, account);
     }
 }
