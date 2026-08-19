@@ -1,49 +1,103 @@
+import os
 import sys
 import tkinter as tk
+import winsound
+
+
+def tocar_som_wav():
+    # Procura pelo arquivo not_sound.wav ou not_sound na pasta atual
+    candidatos = ["not_sound.wav", "not_sound"]
+    caminho_som = None
+
+    for nome in candidatos:
+        if os.path.exists(nome):
+            caminho_som = nome
+            break
+
+    if caminho_som:
+        try:
+            # SND_FILENAME: especifica arquivo local
+            # SND_ASYNC: toca sem travar/congelar a interface do Tkinter
+            winsound.PlaySound(
+                caminho_som, winsound.SND_FILENAME | winsound.SND_ASYNC
+            )
+        except Exception as e:
+            print(f"Erro ao tocar áudio WAV: {e}")
 
 
 def mostrar_notificacao():
-  # Pega o texto passado como argumento (ou usa um padrão)
-  texto_body = sys.argv[1] if len(sys.argv) > 1 else "Nova Mensagem!"
+    sender = sys.argv[1] if len(sys.argv) > 1 else "Anya"
+    body = sys.argv[2] if len(sys.argv) > 2 else "Nova Mensagem!"
 
-  root = tk.Tk()
-  root.withdraw()
+    texto_formatado = f"{sender}: {body}"
 
-  win = tk.Toplevel(root)
-  win.overrideredirect(True)
-  win.attributes("-topmost", True)
+    root = tk.Tk()
+    root.withdraw()
 
-  try:
-    win.attributes("-alpha", 0.85)
-  except Exception:
-    pass
+    win = tk.Toplevel(root)
+    win.overrideredirect(True)
+    win.attributes("-topmost", True)
 
-  # Posição (canto inferior direito)
-  largura = 320
-  altura = 80
-  largura_tela = win.winfo_screenwidth()
-  altura_tela = win.winfo_screenheight()
-  x = largura_tela - largura - 20
-  y = altura_tela - altura - 60
-  win.geometry(f"{largura}x{altura}+{x}+{y}")
+    COR_TRANSPARENTE = "#000001"
+    win.configure(bg=COR_TRANSPARENTE)
 
-  frame = tk.Frame(win, bg="#1e1e1e", bd=2, relief="solid")
-  frame.pack(fill="both", expand=True)
+    try:
+        win.wm_attributes("-transparentcolor", COR_TRANSPARENTE)
+        win.attributes("-alpha", 0.0)
+    except Exception:
+        pass
 
-  label = tk.Label(
-      frame,
-      text=f"Nova Mensagem:\n{texto_body}",
-      fg="#ffffff",
-      bg="#1e1e1e",
-      font=("Segoe UI", 10),
-      justify="left",
-      wraplength=300,
-  )
-  label.pack(padx=10, pady=10, fill="both", expand=True)
+    largura = 500
+    altura = 100
+    largura_tela = win.winfo_screenwidth()
 
-  win.after(4000, root.destroy)
-  root.mainloop()
+    x = (largura_tela - largura) // 2
+    y = 30
+    win.geometry(f"{largura}x{altura}+{x}+{y}")
+
+    # Sombra
+    label_sombra = tk.Label(
+        win,
+        text=texto_formatado,
+        fg="#000000",
+        bg=COR_TRANSPARENTE,
+        font=("Segoe UI", 14, "bold"),
+        justify="center",
+        wraplength=480,
+    )
+    label_sombra.place(x=2, y=2, relwidth=1, relheight=1)
+
+    # Texto Principal
+    label_texto = tk.Label(
+        win,
+        text=texto_formatado,
+        fg="#ffffff",
+        bg=COR_TRANSPARENTE,
+        font=("Segoe UI", 14, "bold"),
+        justify="center",
+        wraplength=480,
+    )
+    label_texto.place(x=0, y=0, relwidth=1, relheight=1)
+
+    def fade_in(alpha=0.0):
+        if alpha <= 1.0:
+            win.attributes("-alpha", alpha)
+            win.after(20, fade_in, alpha + 0.05)
+        else:
+            win.after(3000, fade_out, 1.0)
+
+    def fade_out(alpha=1.0):
+        if alpha >= 0.0:
+            win.attributes("-alpha", alpha)
+            win.after(20, fade_out, alpha - 0.05)
+        else:
+            root.destroy()
+
+    # Dispara o som WAV e inicia o Fade In
+    tocar_som_wav()
+    fade_in()
+    root.mainloop()
 
 
 if __name__ == "__main__":
-  mostrar_notificacao()
+    mostrar_notificacao()
