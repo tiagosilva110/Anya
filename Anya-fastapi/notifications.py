@@ -5,7 +5,6 @@ import winsound
 
 
 def tocar_som_wav():
-    # Procura pelo arquivo not_sound.wav ou not_sound na pasta atual
     candidatos = ["not_sound.wav", "not_sound"]
     caminho_som = None
 
@@ -16,8 +15,6 @@ def tocar_som_wav():
 
     if caminho_som:
         try:
-            # SND_FILENAME: especifica arquivo local
-            # SND_ASYNC: toca sem travar/congelar a interface do Tkinter
             winsound.PlaySound(
                 caminho_som, winsound.SND_FILENAME | winsound.SND_ASYNC
             )
@@ -55,36 +52,53 @@ def mostrar_notificacao():
     y = 30
     win.geometry(f"{largura}x{altura}+{x}+{y}")
 
-    # Sombra
-    label_sombra = tk.Label(
-        win,
-        text=texto_formatado,
-        fg="#000000",
-        bg=COR_TRANSPARENTE,
-        font=("Segoe UI", 14, "bold"),
-        justify="center",
-        wraplength=480,
+    # Criando um Canvas transparente para desenhar o texto com contorno perfeito
+    canvas = tk.Canvas(
+        win, 
+        bg=COR_TRANSPARENTE, 
+        highlightthickness=0, 
+        bd=0
     )
-    label_sombra.place(x=2, y=2, relwidth=1, relheight=1)
+    canvas.pack(fill="both", expand=True)
 
-    # Texto Principal
-    label_texto = tk.Label(
-        win,
+    # Coordenada central do canvas
+    cx = largura / 2
+    cy = altura / 2
+    fonte_estilo = ("Segoe UI", 12, "bold")
+
+    # Desenha as cópias ao redor para simular o Outline (Contorno Preto)
+    offsets = [
+        (-1, -1), (0, -1), (1, -1),
+        (-1,  0),          (1,  0),
+        (-1,  1), (0,  1), (1,  1)
+    ]
+
+    for ox, oy in offsets:
+        canvas.create_text(
+            cx + ox, cy + oy,
+            text=texto_formatado,
+            font=fonte_estilo,
+            fill="#000000",
+            width=480,
+            justify="center"
+        )
+
+    # Texto Principal por cima (Branco)
+    canvas.create_text(
+        cx, cy,
         text=texto_formatado,
-        fg="#ffffff",
-        bg=COR_TRANSPARENTE,
-        font=("Segoe UI", 14, "bold"),
-        justify="center",
-        wraplength=480,
+        font=fonte_estilo,
+        fill="#ffffff",
+        width=480,
+        justify="center"
     )
-    label_texto.place(x=0, y=0, relwidth=1, relheight=1)
 
     def fade_in(alpha=0.0):
         if alpha <= 1.0:
             win.attributes("-alpha", alpha)
             win.after(20, fade_in, alpha + 0.05)
         else:
-            win.after(3000, fade_out, 1.0)
+            win.after(3000 + (len(body) * 50), fade_out, 1.0)
 
     def fade_out(alpha=1.0):
         if alpha >= 0.0:
@@ -93,7 +107,6 @@ def mostrar_notificacao():
         else:
             root.destroy()
 
-    # Dispara o som WAV e inicia o Fade In
     tocar_som_wav()
     fade_in()
     root.mainloop()

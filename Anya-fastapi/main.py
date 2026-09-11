@@ -1,6 +1,8 @@
 import sys
 import subprocess
 import threading
+import queue
+import time
 import uvicorn
 from fastapi import FastAPI, HTTPException, status
 import httpx
@@ -16,11 +18,33 @@ app = FastAPI(title="Anya Client Side", version="0.0.1")
 
 SPRING_BOOT_URL = "http://localhost:8080"
 
+# Fila global para gerenciar as notificações em ordem de chegada
+fila_notificacoes = queue.Queue()
+
 
 class MessageCreate(BaseModel):
     phone: str
     body: str
     account: str
+
+
+def processador_de_fila():
+    """Consome a fila sequencialmente para garantir que uma notificação
+    só apareça após a anterior fechar completamente."""
+    while True:
+        remetente, body_resposta = fila_notificacoes.get()
+        try:
+            # subprocess.run bloqueia até que o script de notificação feche
+            subprocess.run(
+                [sys.executable, "notifications.py", remetente, body_resposta],
+                check=True
+            )
+        except Exception as e:
+            print(f"Erro ao exibir notificação da fila: {e}")
+        finally:
+            fila_notificacoes.task_done()
+            # Pequena pausa opcional entre uma notificação e outra
+            time.sleep(0.3)
 
 
 def gravar_voz(duracao=5, taxa_amostragem=44100):
@@ -67,7 +91,8 @@ async def criar_mensagem_no_spring(mensagem: MessageCreate):
             remetente = contact_info.get("name") or resposta_json.get("account", {}).get("name", "Desconhecido")
             body_resposta = resposta_json.get("body", "Nova mensagem!")
 
-            subprocess.Popen([sys.executable, "notifications.py", remetente, body_resposta])
+            # Em vez de chamar o subprocess direto, jogamos na fila
+            fila_notificacoes.put((remetente, body_resposta))
 
             return resposta_json
 
@@ -96,6 +121,13 @@ def rodar_escuta_global():
 if __name__ == "__main__":
     print("=== Anya Client rodando em segundo plano ===")
     print("Pressione ENTER em *qualquer lugar* do seu computador para gravar a voz.")
+
+    # Inicializa a thread da fila de notificações
+    thread_fila = threading.Thread(
+        target=processador_de_fila,
+        daemon=True
+    )
+    thread_fila.start()
 
     thread_api = threading.Thread(
         target=lambda: uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning"),
