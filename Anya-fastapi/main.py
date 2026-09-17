@@ -108,7 +108,15 @@ def ao_pressionar_tecla(key):
         if key == keyboard.Key.enter:
             print("\n[Global] Tecla ENTER detectada! Iniciando gravação...")
             audio_b64 = gravar_voz(duracao=5)
-            print(f"[Voz] Áudio convertido para base64! Tamanho: {len(audio_b64)}")
+            params = {"idString": "123"}
+            headers = {"Content-Type": "text/plain"}
+            
+            response = requests.put(url, params=params, data=audio_b64, headers=headers)
+            
+            if response.status_code == 204:
+                print(f"[Voz] Áudio enviado com sucesso! Status: {response.status_code}")
+            else:
+                print(f"[Voz] Falha no envio. Status: {response.status_code}, Resposta: {response.text}")
     except Exception as e:
         print(f"Erro ao capturar tecla: {e}")
 

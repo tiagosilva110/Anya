@@ -9,6 +9,7 @@ import io.github.tiagosilva110.Anya.service.AccountService;
 import io.github.tiagosilva110.Anya.service.ContactService;
 import io.github.tiagosilva110.Anya.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -18,6 +19,7 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("message")
 @RequiredArgsConstructor
@@ -66,6 +68,13 @@ public class MessageController {
         service.delete(message.get());
         return ResponseEntity.noContent().build();
 
+    }
+
+    @PutMapping
+    public ResponseEntity<Void> setAudioResponse(@RequestParam String idString){
+        log.info("Recebida requisição para setAudioResponse com id: {}", idString);
+
+        return ResponseEntity.noContent().build();
     }
 
 }
